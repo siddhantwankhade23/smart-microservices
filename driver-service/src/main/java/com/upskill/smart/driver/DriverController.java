@@ -1,6 +1,5 @@
 package com.upskill.smart.driver;
 
-import com.upskill.smart.driver.dto.OrderPlacedEvent;
 import com.upskill.smart.driver.dto.UpdateDriverLocationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

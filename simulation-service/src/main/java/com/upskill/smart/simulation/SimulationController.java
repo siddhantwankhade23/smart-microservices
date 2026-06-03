@@ -19,7 +19,7 @@ public class SimulationController {
     public ResponseEntity<String> startSimulation(
             @RequestBody DriverSimulationRequest request) {
 
-        driverSimulationService.simulateDriverMovement(request);
+        //driverSimulationService.simulateDriverMovement(request);
 
         return ResponseEntity.ok("Simulation started");
     }

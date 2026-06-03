@@ -1,26 +1,29 @@
 package com.upskill.smart.simulation;
 
-import com.upskill.smart.simulation.dto.DriverSimulationRequest;
+import com.upskill.smart.kafka.events.OrderPickedUpEvent;
 import com.upskill.smart.simulation.dto.UpdateDriverLocationRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.kafka.annotation.KafkaHandler;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@KafkaListener(topics = "order-events")
 @Service
 @RequiredArgsConstructor
 public class DriverSimulationService {
 
-    @Async
-    public void simulateDriverMovement(DriverSimulationRequest req) {
 
-        double step = 0.001;
+    @KafkaHandler
+    public void simulateDriverMovement(OrderPickedUpEvent req) {
 
-        double newLat = req.getStartLat();
-        double newLng = req.getStartLng();
+        double step = 0.01;
 
-        double targetLat = req.getDestinationLat();
-        double targetLng = req.getDestinationLng();
+        double newLat = req.startLat();
+        double newLng = req.startLng();
+
+        double targetLat = req.destinationLat();
+        double targetLng = req.destinationLng();
 
         while (!isNear(newLat, newLng, targetLat, targetLng)) {
 
@@ -39,19 +42,19 @@ public class DriverSimulationService {
 
             System.out.println(newLat + "," + newLng);
 
-            updateDriverLocation(req.getDriverId(), newLat, newLng);
+            updateDriverLocation(req.driverId(), newLat, newLng);
 
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
         }
 
         System.out.println("🚗 Driver reached destination");
 
-        updateOrderStatus(req.getOrderId());
-        updateAvailability(req.getDriverId(), true);
+        updateOrderStatus(req.orderId());
+        updateAvailability(req.driverId(), true);
+    }
+
+    @KafkaHandler(isDefault = true)
+    public void ignoreEvents(Object event) {
+        System.out.println("Ignoring " + event.getClass().getSimpleName());
     }
 
     private double moveTowards(double current, double target, double step) {

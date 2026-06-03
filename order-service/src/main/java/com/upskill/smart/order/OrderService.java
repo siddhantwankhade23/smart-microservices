@@ -1,11 +1,15 @@
 package com.upskill.smart.order;
 
-import com.upskill.smart.order.dto.OrderPlacedEvent;
+import com.upskill.smart.kafka.events.DriverAssignedEvent;
+import com.upskill.smart.kafka.events.OrderPlacedEvent;
 import com.upskill.smart.order.dto.DriverSimulationRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaHandler;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@KafkaListener(topics = "driver-events")
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -28,8 +32,6 @@ public class OrderService {
         System.out.println("Order Saved");
         sendOrderPlacedEvent(savedOrder);
         //processOrderAssignment(savedOrder);
-
-
         return savedOrder;
     }
 
@@ -55,6 +57,25 @@ public class OrderService {
         System.out.println("2");
     }
 
+    @KafkaHandler
+    public void processOrderPickup(DriverAssignedEvent driverAssignedEvent) {
+        System.out.println("Driver Assigned Event Received for Order : "+driverAssignedEvent.orderId() + " - Driver Assigned : "+driverAssignedEvent.driverId());
+        Long orderId = driverAssignedEvent.orderId();
+        Long driverId = driverAssignedEvent.driverId();
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+
+        order.setDriverId(driverId);
+        order.setStatus(OrderStatus.ASSIGNED);
+        orderRepository.save(order);
+        System.out.println("2");
+    }
+
+    @KafkaHandler(isDefault = true)
+    public void ignoreEvents(Object event) {
+        System.out.println("Ignoring " + event.getClass().getSimpleName());
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////
     //APIs for Simulating Order Picked up and Order delivered Behaviour
 
@@ -63,12 +84,21 @@ public class OrderService {
         // Update status
         order.setStatus(OrderStatus.PICKED_UP);
         Order pickedUpOrder = orderRepository.save(order);
-        handlePostPickup(pickedUpOrder);
+
+        sendOrderPickedUpEvent(pickedUpOrder);
+
+        //handlePostPickup(pickedUpOrder);
         return pickedUpOrder;
     }
 
+    private void sendOrderPickedUpEvent(Order pickedUpOrder){
+        orderEventProducer.sendOrderPickedUpEvent(pickedUpOrder);
+    }
+
+
     private void handlePostPickup(Order order) {
         System.out.println("Start Simulation for order: " + order.getId());
+
         WebClient client = webClientBuilder.build();
         client.post()
                 .uri("http://simulation-service/simulation" + "/driver/start")
@@ -89,10 +119,5 @@ public class OrderService {
         order.setStatus(OrderStatus.DELIVERED);
         return orderRepository.save(order);
     }
-
-
-
-
-
 
 }

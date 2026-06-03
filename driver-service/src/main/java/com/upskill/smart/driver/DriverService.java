@@ -1,7 +1,10 @@
 package com.upskill.smart.driver;
 
-import com.upskill.smart.driver.dto.OrderPlacedEvent;
+import com.upskill.smart.kafka.events.DriverAssignedEvent;
+import com.upskill.smart.kafka.events.DriverLocationUpdateEvent;
+import com.upskill.smart.kafka.events.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -9,11 +12,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+@KafkaListener(topics = "order-events")
 @Service
 @RequiredArgsConstructor
 public class DriverService {
 
     private final DriverRepository driverRepository;
+
+    private final DriverEventsProducer driverEventsProducer;
 
     public void updateLocation(Long driverId, Double lat, Double lon) {
         Driver driver = driverRepository.findById(driverId)
@@ -22,6 +28,7 @@ public class DriverService {
         driver.setLatitude(lat);
         driver.setLongitude(lon);
 
+        publishDriverLocation(driverId, lat, lon);
         driverRepository.save(driver);
     }
 
@@ -37,6 +44,9 @@ public class DriverService {
     private Optional<Driver> findNearestAvailableDriver(Double pickupLat, Double pickupLng) {
         List<Driver> availableDrivers = driverRepository.findByIsAvailableTrue();
 
+        // Pauses the current thread for 2,000 milliseconds (2 seconds)
+        dummyDelay(3000);
+
         return availableDrivers.stream()
                 .min(Comparator.comparingDouble(driver ->
                         Math.sqrt(
@@ -45,16 +55,35 @@ public class DriverService {
                 )));
     }
 
-    @KafkaListener(id = "order-placed-event-listener", topics = "order-events")
+    private static void dummyDelay(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // Restore interrupted status
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void publishDriverLocation(Long driverId, double newLat, double newLng) {
+        driverEventsProducer.sendDriverLocationUpdateEvent(new DriverLocationUpdateEvent(driverId, newLat, newLng));
+    }
+
+    @KafkaHandler
     public void assignDriver(OrderPlacedEvent orderPlacedEvent) {
-        Optional<Driver> optionalDriver = findNearestAvailableDriver(orderPlacedEvent.getPickupLatitude(), orderPlacedEvent.getPickupLongitude());
+        System.out.println("Order Placed Event Received for Order : "+orderPlacedEvent.orderId());
+        Optional<Driver> optionalDriver = findNearestAvailableDriver(orderPlacedEvent.pickupLatitude(), orderPlacedEvent.pickupLongitude());
 
         Driver driver = optionalDriver.orElseThrow(() -> new RuntimeException("No available driver found"));
         driver.setIsAvailable(false);
         driverRepository.save(driver);
 
-        System.out.println("Driver Id : "+driver.getId()+ " Name : "+driver.getName()+" assigned for order ID : "+orderPlacedEvent.getOrderId());
+        driverEventsProducer.sendDriverAssignedEvent(new DriverAssignedEvent(driver.getId(), orderPlacedEvent.orderId()));
+
+        System.out.println("Driver Id : "+driver.getId()+ " Name : "+driver.getName()+" assigned for order ID : "+orderPlacedEvent.orderId());
     }
 
-
+    @KafkaHandler(isDefault = true)
+    public void ignoreEvents(Object event) {
+        System.out.println("Ignoring " + event.getClass().getSimpleName());
+    }
 }

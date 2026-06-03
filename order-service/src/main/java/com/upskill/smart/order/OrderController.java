@@ -15,8 +15,6 @@ public class OrderController {
         return orderService.createOrder(request);
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////
-    //APIs for Simulating Order Picked up and Order delivered Behaviour
     @PatchMapping("/{orderId}/pickup")
     public ResponseEntity<Order> markOrderAsPickedUp(@PathVariable Long orderId){
         Order order = orderService.markOrderAsPickedUp(orderId);

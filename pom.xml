@@ -21,6 +21,9 @@
         <module>driver-service</module>
         <module>simulation-service</module>
         <module>eureka-server</module>
+        <module>notification-service</module>
+        <module>kafka-events</module>
+        <module>api-gateway</module>
     </modules>
 
     <properties>
