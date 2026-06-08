@@ -4,6 +4,7 @@ import com.upskill.smart.kafka.events.DriverAssignedEvent;
 import com.upskill.smart.kafka.events.DriverLocationUpdateEvent;
 import com.upskill.smart.kafka.events.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @KafkaListener(topics = "order-events")
 @Service
 @RequiredArgsConstructor
@@ -70,7 +72,7 @@ public class DriverService {
 
     @KafkaHandler
     public void assignDriver(OrderPlacedEvent orderPlacedEvent) {
-        System.out.println("Order Placed Event Received for Order : "+orderPlacedEvent.orderId());
+        log.info("Order Placed Event Received for Order : "+orderPlacedEvent.orderId());
         Optional<Driver> optionalDriver = findNearestAvailableDriver(orderPlacedEvent.pickupLatitude(), orderPlacedEvent.pickupLongitude());
 
         Driver driver = optionalDriver.orElseThrow(() -> new RuntimeException("No available driver found"));
@@ -79,11 +81,11 @@ public class DriverService {
 
         driverEventsProducer.sendDriverAssignedEvent(new DriverAssignedEvent(driver.getId(), orderPlacedEvent.orderId()));
 
-        System.out.println("Driver Id : "+driver.getId()+ " Name : "+driver.getName()+" assigned for order ID : "+orderPlacedEvent.orderId());
+        log.info("Driver Id : "+driver.getId()+ " Name : "+driver.getName()+" assigned for order ID : "+orderPlacedEvent.orderId());
     }
 
     @KafkaHandler(isDefault = true)
     public void ignoreEvents(Object event) {
-        System.out.println("Ignoring " + event.getClass().getSimpleName());
+        log.info("Ignoring " + event.getClass().getSimpleName());
     }
 }

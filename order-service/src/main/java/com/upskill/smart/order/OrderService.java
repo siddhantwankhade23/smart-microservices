@@ -4,11 +4,13 @@ import com.upskill.smart.kafka.events.DriverAssignedEvent;
 import com.upskill.smart.kafka.events.OrderPlacedEvent;
 import com.upskill.smart.order.dto.DriverSimulationRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@Slf4j
 @KafkaListener(topics = "driver-events")
 @Service
 @RequiredArgsConstructor
@@ -29,7 +31,7 @@ public class OrderService {
         order.setDropLng(request.getDropLng());
         order.setStatus(OrderStatus.CREATED);
         Order savedOrder = orderRepository.save(order);
-        System.out.println("Order Saved");
+        log.info("Order Saved");
         sendOrderPlacedEvent(savedOrder);
         //processOrderAssignment(savedOrder);
         return savedOrder;
@@ -40,7 +42,7 @@ public class OrderService {
     }
 
     private void processOrderAssignment(Order order) {
-        System.out.println("processOrderAssignment");
+        log.info("processOrderAssignment");
 
         WebClient client = webClientBuilder.build();
 
@@ -54,12 +56,12 @@ public class OrderService {
         order.setDriverId(driverId);
         order.setStatus(OrderStatus.ASSIGNED);
         orderRepository.save(order);
-        System.out.println("2");
+        log.info("2");
     }
 
     @KafkaHandler
     public void processOrderPickup(DriverAssignedEvent driverAssignedEvent) {
-        System.out.println("Driver Assigned Event Received for Order : "+driverAssignedEvent.orderId() + " - Driver Assigned : "+driverAssignedEvent.driverId());
+        log.info("Driver Assigned Event Received for Order : "+driverAssignedEvent.orderId() + " - Driver Assigned : "+driverAssignedEvent.driverId());
         Long orderId = driverAssignedEvent.orderId();
         Long driverId = driverAssignedEvent.driverId();
 
@@ -68,12 +70,12 @@ public class OrderService {
         order.setDriverId(driverId);
         order.setStatus(OrderStatus.ASSIGNED);
         orderRepository.save(order);
-        System.out.println("2");
+        log.info("2");
     }
 
     @KafkaHandler(isDefault = true)
     public void ignoreEvents(Object event) {
-        System.out.println("Ignoring " + event.getClass().getSimpleName());
+        log.info("Ignoring " + event.getClass().getSimpleName());
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +99,7 @@ public class OrderService {
 
 
     private void handlePostPickup(Order order) {
-        System.out.println("Start Simulation for order: " + order.getId());
+        log.info("Start Simulation for order: " + order.getId());
 
         WebClient client = webClientBuilder.build();
         client.post()

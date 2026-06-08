@@ -3,12 +3,14 @@ package com.upskill.smart.order;
 import com.upskill.smart.kafka.events.OrderPickedUpEvent;
 import com.upskill.smart.kafka.events.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderEventProducer {
@@ -26,9 +28,9 @@ public class OrderEventProducer {
             orderPlacedEvent
                     .whenComplete((result, ex) -> {
                         if (ex == null) {
-                            System.out.println("Order Placed Event Sent successfully");
+                            log.info("Order Placed Event Sent successfully");
                         } else {
-                            System.out.println("Failed: " + ex.getMessage());
+                            log.info("Failed: " + ex.getMessage());
                         }
                     });
 
@@ -51,9 +53,9 @@ public class OrderEventProducer {
             orderPickedUpEvent
                     .whenComplete((result, ex) -> {
                         if (ex == null) {
-                            System.out.println("Order Pickup event sent successfully");
+                            log.info("Order Pickup event sent successfully");
                         } else {
-                            System.out.println("Failed: " + ex.getMessage());
+                            log.info("Failed: " + ex.getMessage());
                         }
                     });
 

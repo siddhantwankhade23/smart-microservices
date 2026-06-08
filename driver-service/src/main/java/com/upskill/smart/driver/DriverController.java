@@ -2,11 +2,13 @@ package com.upskill.smart.driver;
 
 import com.upskill.smart.driver.dto.UpdateDriverLocationRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/drivers")
 @RequiredArgsConstructor
+@Slf4j
 public class DriverController {
     private final DriverService driverService;
 
@@ -16,7 +18,7 @@ public class DriverController {
                 request.getDriverId(),
                 request.getLatitude(),
                 request.getLongitude());
-        System.out.println("Location Updated");
+        log.info("Location Updated");
         return "Location Updated";
     }
 
@@ -26,7 +28,7 @@ public class DriverController {
             @RequestParam Boolean isAvailable
     ) {
         driverService.updateAvailability(driverId, isAvailable);
-        System.out.println("Location Updated");
+        log.info("Availability updated");
         return "Availability updated";
     }
 

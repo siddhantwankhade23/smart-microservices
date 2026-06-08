@@ -3,10 +3,12 @@ package com.upskill.smart.driver;
 import com.upskill.smart.kafka.events.DriverAssignedEvent;
 import com.upskill.smart.kafka.events.DriverLocationUpdateEvent;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class DriverEventsProducer {
@@ -20,9 +22,9 @@ public class DriverEventsProducer {
 
                     if (throwable == null){
                         RecordMetadata recordMetadata = driverAssignedEventSendResult.getRecordMetadata();
-                        System.out.println("Driver Assigned Event Sent " + recordMetadata.offset() + " : "+recordMetadata.partition());
+                        log.info("Driver Assigned Event Sent " + recordMetadata.offset() + " : "+recordMetadata.partition());
                     } else {
-                        System.out.println("Failed to send Driver Assigned Event : "+throwable.getMessage());
+                        log.info("Failed to send Driver Assigned Event : "+throwable.getMessage());
                     }
 
                 });
@@ -33,9 +35,9 @@ public class DriverEventsProducer {
         kafkaTemplate.send(TOPIC, driverLocationUpdateEvent).whenComplete((
                 stringObjectSendResult, throwable) -> {
             if (throwable == null){
-                System.out.println("Driver Location Sent");
+                log.info("Driver Location Sent");
             } else {
-                System.out.println("Driver Location Update Publish failed : "+throwable.getMessage());
+                log.info("Driver Location Update Publish failed : "+throwable.getMessage());
             }
         });
     }

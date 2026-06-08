@@ -3,6 +3,7 @@ package com.upskill.smart.simulation;
 import com.upskill.smart.kafka.events.OrderPickedUpEvent;
 import com.upskill.smart.simulation.dto.UpdateDriverLocationRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @KafkaListener(topics = "order-events")
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DriverSimulationService {
 
     private final WebClient.Builder webClientBuilder;
@@ -42,13 +44,13 @@ public class DriverSimulationService {
                 newLng += (dLng / distance) * step;
             }
 
-            System.out.println(newLat + "," + newLng);
+            log.info(newLat + "," + newLng);
 
             updateDriverLocation(req.driverId(), newLat, newLng);
 
         }
 
-        System.out.println("🚗 Driver reached destination");
+        log.info("🚗 Driver reached destination");
 
         updateOrderStatus(req.orderId());
         updateAvailability(req.driverId(), true);
@@ -56,7 +58,7 @@ public class DriverSimulationService {
 
     @KafkaHandler(isDefault = true)
     public void ignoreEvents(Object event) {
-        System.out.println("Ignoring " + event.getClass().getSimpleName());
+        log.info("Ignoring " + event.getClass().getSimpleName());
     }
 
     private double moveTowards(double current, double target, double step) {
