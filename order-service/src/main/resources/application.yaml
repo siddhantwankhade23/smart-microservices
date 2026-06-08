@@ -26,8 +26,11 @@ spring:
       properties:
         spring.json.trusted.packages: com.upskill.smart.kafka.events
 
-
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
 
 server:
   port: 8081

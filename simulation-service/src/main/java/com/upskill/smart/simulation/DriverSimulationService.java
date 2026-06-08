@@ -3,6 +3,7 @@ package com.upskill.smart.simulation;
 import com.upskill.smart.kafka.events.OrderPickedUpEvent;
 import com.upskill.smart.simulation.dto.UpdateDriverLocationRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @RequiredArgsConstructor
 public class DriverSimulationService {
 
+    private final WebClient.Builder webClientBuilder;
 
     @KafkaHandler
     public void simulateDriverMovement(OrderPickedUpEvent req) {
@@ -68,12 +70,13 @@ public class DriverSimulationService {
                 Math.abs(lng1 - lng2) < threshold;
     }
 
+    @LoadBalanced
     public void updateDriverLocation(Long driverId, Double lat, Double lng) {
 
-        WebClient client = WebClient.create("http://localhost:8082/drivers");
+        WebClient client = webClientBuilder.build();
 
         client.post()
-                .uri("/location")
+                .uri("http://driver-service/drivers" + "/location")
                 .bodyValue(new UpdateDriverLocationRequest(driverId, lat, lng))
                 .retrieve()
                 .bodyToMono(Void.class)
@@ -82,11 +85,11 @@ public class DriverSimulationService {
 
     public void updateAvailability(Long driverId, boolean isAvailable) {
 
-        WebClient client = WebClient.create("http://localhost:8082/drivers");
+        WebClient client = webClientBuilder.build();
 
         client.post()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/availability")
+                        .path("http://driver-service/drivers" +"/availability")
                         .queryParam("driverId", driverId)
                         .queryParam("isAvailable", isAvailable)
                         .build())
@@ -94,9 +97,9 @@ public class DriverSimulationService {
     }
 
     private void updateOrderStatus(Long orderId) {
-        WebClient client = WebClient.create("http://localhost:8081/orders");
+        WebClient client = webClientBuilder.build();
         client.patch()
-                .uri("/{id}/deliver", orderId)
+                .uri("http://order-service" +"/{id}/deliver", orderId)
                 .retrieve()
                 .bodyToMono(Void.class);
     }

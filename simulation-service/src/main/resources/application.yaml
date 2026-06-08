@@ -14,4 +14,4 @@ spring:
         spring.json.trusted.packages: com.upskill.smart.kafka.events
 
 server:
-  port: 8083
+  port: 8085
